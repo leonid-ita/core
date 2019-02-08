@@ -62,7 +62,7 @@ class Preview {
 	private $userView = null;
 
 	//vars
-	/** @var File */
+	/** @var Node | null */
 	private $file;
 	private $maxX;
 	private $maxY;
@@ -152,9 +152,9 @@ class Preview {
 	}
 
 	/**
-	 * returns the path of the file you want a thumbnail from
+	 * returns the node you want a thumbnail from
 	 *
-	 * @return File
+	 * @return Node | null
 	 */
 	public function getFile() {
 		return $this->file;
@@ -221,15 +221,6 @@ class Preview {
 	 */
 	public function getConfigMaxY() {
 		return $this->configMaxHeight;
-	}
-
-	/**
-	 * Returns the FileInfo object associated with the file to preview
-	 *
-	 * @return false|Files\FileInfo|\OCP\Files\FileInfo
-	 */
-	protected function getFileInfo() {
-		return $this->file;
 	}
 
 	/**
@@ -367,7 +358,7 @@ class Preview {
 			return false;
 		}
 
-		if (!$this->getFileInfo() instanceof FileInfo) {
+		if (!$this->getFile() instanceof FileInfo) {
 			Util::writeLog('core', 'File:"' . $file->getPath() . '" not found', Util::DEBUG);
 
 			return false;
@@ -384,7 +375,7 @@ class Preview {
 	 * @return bool
 	 */
 	public function deletePreview() {
-		$fileInfo = $this->getFileInfo();
+		$fileInfo = $this->getFile();
 		if ($fileInfo !== null && $fileInfo !== false) {
 			$previewPath = $this->buildCachePath();
 			if (!\strpos($previewPath, 'max')) {
@@ -396,7 +387,7 @@ class Preview {
 	}
 
 	/**
-	 * Deletes all previews of a file
+	 * Deletes all previews of a file including version previews
 	 *
 	 * @param int|null $versionId (optional) - delete all previews of the specified versionId
 	 */
@@ -406,7 +397,7 @@ class Preview {
 		$propagator->beginBatch();
 
 		$toDelete = $this->getChildren();
-		$toDelete[] = $this->getFileInfo();
+		$toDelete[] = $this->getFile();
 
 		foreach ($toDelete as $delete) {
 			if ($delete instanceof FileInfo) {
@@ -441,7 +432,7 @@ class Preview {
 	 * @return string|false path to the cached preview if it exists or false
 	 */
 	public function isCached() {
-		$fileId = $this->getFileInfo()->getId();
+		$fileId = $this->getFile()->getId();
 		if ($fileId === null) {
 			return false;
 		}
@@ -752,7 +743,7 @@ class Preview {
 		}
 
 		$this->preview = null;
-		$fileInfo = $this->getFileInfo();
+		$fileInfo = $this->getFile();
 		if ($fileInfo === null || $fileInfo === false) {
 			return new \OC_Image();
 		}
@@ -1081,7 +1072,7 @@ class Preview {
 	 */
 	private function getPreviewPath($fileId = null) {
 		if ($fileId === null) {
-			$fileId = $this->getFileInfo()->getId();
+			$fileId = $this->getFile()->getId();
 			if ($this->versionId !== null) {
 				$fileId .= '/';
 				$fileId .= $this->versionId;
