@@ -507,7 +507,7 @@ services:
     image: selenium/standalone-firefox-debug:3.8.1
     pull: true
     environment:
-      - SE_OPTS=-enablePassThrough false -trustAllSSLCertificates
+      - SE_OPTS=-enablePassThrough false
     when:
       matrix:
         TEST_SUITE: selenium
