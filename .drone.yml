@@ -37,7 +37,7 @@ pipeline:
       - php occ security:certificates
     when:
       matrix:
-        USE_SSL_FEDERATED_SERVER: true
+        USE_FEDERATED_SERVER: true
 
   fix-permissions-federation-server:
     image: owncloudci/php:${PHP_VERSION}
@@ -46,7 +46,7 @@ pipeline:
       - chown www-data /drone/fed-server -R
     when:
       matrix:
-        USE_SSL_FEDERATED_SERVER: true
+        USE_FEDERATED_SERVER: true
 
   restore:
     image: plugins/s3-cache:1
