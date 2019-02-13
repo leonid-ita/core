@@ -17,7 +17,7 @@ pipeline:
     core_path: /drone/fed-server
     when:
       matrix:
-        USE_FEDERATED_SERVER: true
+        USE_SSL_FEDERATED_SERVER: true
 
   configure-federation-server:
     image: owncloudci/php:${PHP_VERSION}
@@ -31,13 +31,13 @@ pipeline:
       - php occ config:system:set trusted_domains 2 --value=federated
       - php occ log:manage --level 0
       - php occ config:list
-      - echo "export TEST_SERVER_FED_URL=https://federated" > /drone/saved-settings.sh
+      - echo "export TEST_SERVER_FED_URL=${SERVER_PROTOCOL}://federated" > /drone/saved-settings.sh
       - php occ security:certificates:import /drone/server.crt
       - php occ security:certificates:import /drone/federated.crt
       - php occ security:certificates
     when:
       matrix:
-        USE_FEDERATED_SERVER: true
+        USE_SSL_FEDERATED_SERVER: true
 
   fix-permissions-federation-server:
     image: owncloudci/php:${PHP_VERSION}
@@ -46,7 +46,7 @@ pipeline:
       - chown www-data /drone/fed-server -R
     when:
       matrix:
-        USE_FEDERATED_SERVER: true
+        USE_SSL_FEDERATED_SERVER: true
 
   restore:
     image: plugins/s3-cache:1
@@ -272,8 +272,8 @@ pipeline:
       - echo 'Sharing a folder ..'
       - OC_PASS=123456 php occ user:add --password-from-env user1
       - chown www-data /drone/src -R
-      - curl -k -s -u user1:123456 -X MKCOL 'https://server/remote.php/webdav/new_folder'
-      - curl -k -s -u user1:123456 "https://server/ocs/v2.php/apps/files_sharing/api/v1/shares" --data 'path=/new_folder&shareType=0&permissions=15&name=new_folder&shareWith=admin'
+      - curl -k -s -u user1:123456 -X MKCOL '${SERVER_PROTOCOL}://server/remote.php/webdav/new_folder'
+      - curl -k -s -u user1:123456 "${SERVER_PROTOCOL}://server/ocs/v2.php/apps/files_sharing/api/v1/shares" --data 'path=/new_folder&shareType=0&permissions=15&name=new_folder&shareWith=admin'
     when:
       matrix:
         TEST_SUITE: litmus
@@ -282,7 +282,7 @@ pipeline:
     image: owncloud/litmus
     pull: true
     environment:
-      - LITMUS_URL=https://server/remote.php/webdav
+      - LITMUS_URL=${SERVER_PROTOCOL}://server/remote.php/webdav
       - LITMUS_USERNAME=admin
       - LITMUS_PASSWORD=admin
     when:
@@ -293,7 +293,7 @@ pipeline:
     image: owncloud/litmus
     pull: true
     environment:
-    - LITMUS_URL=https://server/remote.php/dav/files/admin
+    - LITMUS_URL=${SERVER_PROTOCOL}://server/remote.php/dav/files/admin
     - LITMUS_USERNAME=admin
     - LITMUS_PASSWORD=admin
     when:
@@ -304,7 +304,7 @@ pipeline:
     image: owncloud/litmus
     pull: true
     environment:
-    - LITMUS_URL=https://server/remote.php/dav/files/admin/local_storage/
+    - LITMUS_URL=${SERVER_PROTOCOL}://server/remote.php/dav/files/admin/local_storage/
     - LITMUS_USERNAME=admin
     - LITMUS_PASSWORD=admin
     when:
@@ -315,7 +315,7 @@ pipeline:
     image: owncloud/litmus
     pull: true
     environment:
-    - LITMUS_URL=https://server/remote.php/webdav/local_storage/
+    - LITMUS_URL=${SERVER_PROTOCOL}://server/remote.php/webdav/local_storage/
     - LITMUS_USERNAME=admin
     - LITMUS_PASSWORD=admin
     when:
@@ -326,7 +326,7 @@ pipeline:
     image: owncloud/litmus
     pull: true
     environment:
-    - LITMUS_URL=https://server/remote.php/dav/files/admin/new_folder/
+    - LITMUS_URL=${SERVER_PROTOCOL}://server/remote.php/dav/files/admin/new_folder/
     - LITMUS_USERNAME=admin
     - LITMUS_PASSWORD=admin
     when:
@@ -337,7 +337,7 @@ pipeline:
     image: owncloud/litmus
     pull: true
     environment:
-    - LITMUS_URL=https://server/remote.php/webdav/new_folder/
+    - LITMUS_URL=${SERVER_PROTOCOL}://server/remote.php/webdav/new_folder/
     - LITMUS_USERNAME=admin
     - LITMUS_PASSWORD=admin
     when:
@@ -364,13 +364,13 @@ pipeline:
     when:
       matrix:
         OWNCLOUD_LOG: true
-        USE_FEDERATED_SERVER: true
+        USE_SSL_FEDERATED_SERVER: true
 
   api-acceptance-tests:
     image: owncloudci/php:${PHP_VERSION}
     pull: true
     environment:
-      - TEST_SERVER_URL=https://server
+      - TEST_SERVER_URL=${SERVER_PROTOCOL}://server
     commands:
       - touch /drone/saved-settings.sh
       - . /drone/saved-settings.sh
@@ -383,7 +383,7 @@ pipeline:
     image: owncloudci/php:${PHP_VERSION}
     pull: true
     environment:
-      - TEST_SERVER_URL=https://server
+      - TEST_SERVER_URL=${SERVER_PROTOCOL}://server
       - MAILHOG_HOST=email
     commands:
       - touch /drone/saved-settings.sh
@@ -400,7 +400,7 @@ pipeline:
       - BROWSER=${BROWSER}
       - SELENIUM_HOST=selenium
       - SELENIUM_PORT=4444
-      - TEST_SERVER_URL=https://server
+      - TEST_SERVER_URL=${SERVER_PROTOCOL}://server
       - PLATFORM=Linux
       - MAILHOG_HOST=email
     commands:
@@ -526,6 +526,18 @@ services:
     when:
       matrix:
         USE_SERVER: true
+        SERVER_PROTOCOL: https
+
+  server:
+    image: owncloudci/php:${PHP_VERSION}
+    pull: true
+    environment:
+      - APACHE_WEBROOT=/drone/src/
+    command: [ "/usr/local/bin/apachectl", "-e", "debug" , "-D", "FOREGROUND" ]
+    when:
+      matrix:
+        USE_SERVER: true
+        SERVER_PROTOCOL: http
 
   federated:
     image: owncloudci/php:${PHP_VERSION}
@@ -540,6 +552,18 @@ services:
     when:
       matrix:
         USE_FEDERATED_SERVER: true
+        SERVER_PROTOCOL: https
+
+  federated:
+    image: owncloudci/php:${PHP_VERSION}
+    pull: true
+    environment:
+      - APACHE_WEBROOT=/drone/fed-server/
+    command: [ "/usr/local/bin/apachectl", "-e", "debug" , "-D", "FOREGROUND" ]
+    when:
+      matrix:
+        USE_FEDERATED_SERVER: true
+        SERVER_PROTOCOL: http
 
   apache_webdav:
     image: owncloudci/php
@@ -600,6 +624,7 @@ matrix:
       BEHAT_SUITE: webUIAdminSettings
       DB_TYPE: mariadb
       USE_SERVER: true
+      SERVER_PROTOCOL: http
       INSTALL_SERVER: true
       CHOWN_SERVER: true
       OWNCLOUD_LOG: true
