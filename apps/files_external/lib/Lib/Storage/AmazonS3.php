@@ -429,6 +429,7 @@ class AmazonS3 extends \OCP\Files\Storage\StorageAdapter {
 		];
 
 		$fileType = $this->filetype($path);
+		$mimeType = \OC::$server->getMimeTypeDetector()->detectPath($path);
 		try {
 			if ($fileType !== false) {
 				if ($fileType === 'dir' && ! $this->isRoot($path)) {
@@ -439,11 +440,11 @@ class AmazonS3 extends \OCP\Files\Storage\StorageAdapter {
 					'Key' => $this->cleanKey($path),
 					'Metadata' => $metadata,
 					'CopySource' => $this->bucket . '/' . $path,
+					'ContentType' => $mimeType,
 					'MetadataDirective' => 'REPLACE',
 				]);
 				$this->testTimeout();
 			} else {
-				$mimeType = \OC::$server->getMimeTypeDetector()->detectPath($path);
 				$this->getConnection()->putObject([
 					'Bucket' => $this->bucket,
 					'Key' => $this->cleanKey($path),
