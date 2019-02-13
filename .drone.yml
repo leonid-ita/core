@@ -17,7 +17,7 @@ pipeline:
     core_path: /drone/fed-server
     when:
       matrix:
-        USE_SSL_FEDERATED_SERVER: true
+        USE_FEDERATED_SERVER: true
 
   configure-federation-server:
     image: owncloudci/php:${PHP_VERSION}
@@ -364,7 +364,7 @@ pipeline:
     when:
       matrix:
         OWNCLOUD_LOG: true
-        USE_SSL_FEDERATED_SERVER: true
+        USE_FEDERATED_SERVER: true
 
   api-acceptance-tests:
     image: owncloudci/php:${PHP_VERSION}
